@@ -1,0 +1,17 @@
+# Virtual environments
+.venv/
+SBPS/venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Test / logs
+test/
+*.log
+
+# IDE / Editor files
+.vscode/
+*.swp
