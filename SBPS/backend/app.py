@@ -3,38 +3,54 @@ from flask import Flask, request, jsonify, send_from_directory
 from deepface import DeepFace
 import base64
 import os
-import json
 import time
 import numpy as np
 from PIL import Image
 from io import BytesIO
+from dotenv import load_dotenv
+
+from db import DBConfigError
+from user_service import (
+    InsufficientBalanceError,
+    UserNotFoundError,
+    UserService,
+    UserServiceError,
+)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "frontend"))
-USERS_DB = os.path.join(BASE_DIR, "models", "users.json")
 PIN_VERIFIED = {}
 PIN_TTL_SECONDS = 300
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="")
 
-
-def load_users_data():
-    """Load users from JSON database."""
-    if os.path.exists(USERS_DB):
-        with open(USERS_DB, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
+load_dotenv()
 
 
-def save_users_data(users_data):
-    """Persist users JSON database."""
-    with open(USERS_DB, "w", encoding="utf-8") as f:
-        json.dump(users_data, f, ensure_ascii=False, indent=2)
+def _get_int_env(name, default):
+    try:
+        return int(os.getenv(name, default))
+    except (TypeError, ValueError):
+        return int(default)
 
 
-def get_user(users_data, user_id):
-    """Get a user by id from JSON map."""
-    return users_data.get(str(user_id))
+SERVICE_INIT_ERROR = None
+try:
+    user_service = UserService(
+        min_conn=_get_int_env("DB_POOL_MIN", 1),
+        max_conn=_get_int_env("DB_POOL_MAX", 20),
+    )
+except DBConfigError as exc:
+    user_service = None
+    SERVICE_INIT_ERROR = str(exc)
+
+
+def ensure_service_ready():
+    if user_service is None:
+        message = SERVICE_INIT_ERROR or "Database service is not initialized"
+        raise RuntimeError(message)
+
+    return user_service
 
 
 def mark_pin_verified(user_id):
@@ -80,11 +96,13 @@ def resolve_face_path(relative_path):
 
 def verify_face_from_image(image_array, distance_threshold=0.40):
     """Verify face against all registered users."""
-    users_data = load_users_data()
+    service = ensure_service_ready()
+    users_data = service.list_users()
     best_match = None
     best_distance = float("inf")
 
-    for user_id, user in users_data.items():
+    for user in users_data:
+        user_id = user.get("user_id")
         face_path = resolve_face_path(user.get("face_path"))
         if not face_path:
             continue
@@ -127,27 +145,48 @@ def serve_static(filename):
 
 @app.route("/health", methods=["GET"])
 def health_check():
-    users = load_users_data()
-    return jsonify({
-        "success": True,
-        "users_count": len(users),
-        "status": "ready"
-    }), 200
+    try:
+        service = ensure_service_ready()
+        users_count = service.count_users()
+        return jsonify({
+            "success": True,
+            "users_count": users_count,
+            "status": "ready"
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "users_count": 0,
+            "status": "db_error",
+            "message": str(e)
+        }), 500
 
 
 @app.route("/users", methods=["GET"])
 def list_users():
-    users = load_users_data()
-    users_list = [
-        {"user_id": uid, "name": user.get("name"),
-         "balance": user.get("balance")}
-        for uid, user in users.items()
-    ]
-    return jsonify({
-        "success": True,
-        "data": users_list,
-        "count": len(users_list)
-    }), 200
+    try:
+        service = ensure_service_ready()
+        users = service.list_users()
+        users_list = [
+            {
+                "user_id": user.get("user_id"),
+                "name": user.get("name"),
+                "balance": user.get("balance"),
+            }
+            for user in users
+        ]
+        return jsonify({
+            "success": True,
+            "data": users_list,
+            "count": len(users_list)
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "data": [],
+            "count": 0,
+            "message": str(e)
+        }), 500
 
 
 @app.route("/verify_face", methods=["POST"])
@@ -224,22 +263,24 @@ def verify_pin_endpoint():
                 "message": "user_id and pin are required"
             }), 400
 
-        users_data = load_users_data()
-        user = get_user(users_data, user_id)
-        if not user:
+        service = ensure_service_ready()
+
+        try:
+            is_valid, user = service.verify_pin_plaintext(user_id, pin)
+        except UserNotFoundError:
             return jsonify({
                 "success": False,
                 "message": "User not found"
             }), 404
 
-        stored_pin = str(user.get("pin", "")).strip()
+        stored_pin = str(user.get("pin", "")).strip() if user else ""
         if not stored_pin:
             return jsonify({
                 "success": False,
                 "message": "PIN not configured for user"
             }), 400
 
-        if pin != stored_pin:
+        if not is_valid:
             return jsonify({
                 "success": False,
                 "message": "Invalid PIN"
@@ -297,8 +338,9 @@ def pay_endpoint():
                 "message": "Amount must be greater than 0"
             }), 400
 
-        users_data = load_users_data()
-        user = get_user(users_data, user_id)
+        service = ensure_service_ready()
+
+        user = service.get_user(user_id)
         if not user:
             return jsonify({
                 "success": False,
@@ -311,31 +353,43 @@ def pay_endpoint():
                 "message": "PIN verification required"
             }), 401
 
-        balance = float(user.get("balance", 0))
-        if balance < amount:
+        try:
+            payment_result = service.process_payment_atomic(user_id, amount)
+        except InsufficientBalanceError as exc:
             return jsonify({
                 "success": False,
                 "data": {
                     "user_id": str(user_id),
                     "name": user.get("name"),
-                    "current_balance": round(balance, 2),
+                    "current_balance": round(float(exc.current_balance), 2),
                     "amount": round(amount, 2)
                 },
                 "message": "Non: solde insuffisant"
             }), 400
+        except UserNotFoundError:
+            return jsonify({
+                "success": False,
+                "message": "User not found"
+            }), 404
+        except UserServiceError as exc:
+            return jsonify({
+                "success": False,
+                "message": str(exc)
+            }), 400
 
-        new_balance = round(balance - amount, 2)
-        user["balance"] = new_balance
-        save_users_data(users_data)
         clear_pin_verification(user_id)
 
         return jsonify({
             "success": True,
             "data": {
                 "user_id": str(user_id),
-                "name": user.get("name"),
-                "amount": round(amount, 2),
-                "new_balance": new_balance
+                "name": payment_result.get("name"),
+                "amount": round(
+                    float(payment_result.get("amount", amount)), 2
+                ),
+                "new_balance": round(
+                    float(payment_result.get("new_balance", 0)), 2
+                )
             },
             "message": "Paiement effectué"
         }), 200
