@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TPE Biométrique - Verification Faciale</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: start;
+        }
+
+        /* CAMERA SECTION */
+        .camera-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .camera-label {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            text-align: center;
+        }
+
+        #videoContainer {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4/3;
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #10b981;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.error {
+            background: #ef4444;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .camera-info {
+            background: #f3f4f6;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            color: #666;
+            text-align: center;
+        }
+
+        /* BUTTONS */
+        .button-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px 20px;
+            font-size: 1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        /* RESULT SECTION */
+        .result-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .result-label {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        #capturedImage {
+            width: 100%;
+            border-radius: 15px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            display: none;
+        }
+
+        .result-card {
+            background: #f0fdf4;
+            border: 2px solid #10b981;
+            border-radius: 12px;
+            padding: 20px;
+            display: block;
+        }
+
+        .result-card.error {
+            background: #fef2f2;
+            border-color: #ef4444;
+        }
+
+        .result-card.hidden {
+            display: none;
+        }
+
+        .result-card h2 {
+            color: #10b981;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+        }
+
+        .result-card.error h2 {
+            color: #ef4444;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #d1e7dd;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-label-text {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .result-value {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .error-message {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+        }
+
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        /* STATS */
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .stat-box {
+            background: #f9fafb;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            color: #999;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            color: #333;
+            font-weight: 700;
+            margin-top: 5px;
+        }
+
+        .action-panel {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            display: none;
+            gap: 12px;
+        }
+
+        .action-panel.show {
+            display: grid;
+        }
+
+        .action-panel label {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .action-panel input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .info-message {
+            font-size: 0.95em;
+            color: #1f2937;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 12px;
+            display: none;
+        }
+
+        .info-message.show {
+            display: block;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1024px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 TPE Biométrique</h1>
+            <p>Vérification faciale pour paiement sécurisé</p>
+        </div>
+
+        <div class="content">
+            <!-- CAMERA SECTION -->
+            <div class="camera-section">
+                <div class="camera-label">
+                    <span class="status-indicator" id="statusIndicator"></span>
+                    Caméra en direct
+                </div>
+
+                <div id="videoContainer">
+                    <video id="video" playsinline autoplay></video>
+                </div>
+
+                <div class="camera-info" id="cameraInfo">
+                    ✓ Caméra connectée et prête
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-primary" id="captureBtn" onclick="captureImage()">
+                        📸 Capturer
+                    </button>
+                    <button class="btn-secondary" id="switchCameraBtn" onclick="switchCamera()">
+                        🔄 Changer caméra
+                    </button>
+                </div>
+            </div>
+
+            <!-- RESULT SECTION -->
+            <div class="result-section">
+                <div class="result-label">Résultat</div>
+
+                <div class="error-message" id="errorMessage"></div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Vérification en cours...</p>
+                </div>
+
+                <img id="capturedImage" alt="Image capturée">
+
+                <button class="btn-primary" id="verifyBtn" onclick="verifyFace()" style="display: none;">
+                    ✓ Vérifier l'identité
+                </button>
+
+                <div class="result-card hidden" id="resultCard">
+                    <h2 id="resultTitle">Utilisateur reconnu ✓</h2>
+                    <div class="result-item">
+                        <span class="result-label-text">Nom:</span>
+                        <span class="result-value" id="resultName">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label-text">ID Utilisateur:</span>
+                        <span class="result-value" id="resultUserId">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label-text">Solde:</span>
+                        <span class="result-value" id="resultBalance">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label-text">Confiance:</span>
+                        <span class="result-value" id="resultDistance">-</span>
+                    </div>
+                </div>
+
+                <div class="action-panel" id="pinPanel">
+                    <label for="pinInput">Code PIN</label>
+                    <input
+                        type="password"
+                        id="pinInput"
+                        maxlength="6"
+                        inputmode="numeric"
+                        placeholder="Saisir votre PIN"
+                    >
+                    <button class="btn-primary" onclick="verifyPin()">
+                        🔐 Vérifier PIN
+                    </button>
+                </div>
+
+                <div class="action-panel" id="paymentPanel">
+                    <label for="amountInput">Montant à payer (€)</label>
+                    <input
+                        type="number"
+                        id="amountInput"
+                        min="0.01"
+                        step="0.01"
+                        placeholder="Ex: 15.50"
+                    >
+                    <button class="btn-primary" onclick="pay()">💳 Payer</button>
+                </div>
+
+                <div class="info-message" id="paymentMessage"></div>
+
+                <div class="stats" id="stats" style="display: none;">
+                    <div class="stat-box">
+                        <div class="stat-label">Temps</div>
+                        <div class="stat-value" id="responseTime">0ms</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Modèle</div>
+                        <div class="stat-value" id="modelName">FaceNet512</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('captureBtn');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const capturedImage = document.getElementById('capturedImage');
+        const resultCard = document.getElementById('resultCard');
+        const errorMessage = document.getElementById('errorMessage');
+        const loading = document.getElementById('loading');
+        const cameraInfo = document.getElementById('cameraInfo');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const stats = document.getElementById('stats');
+        const pinPanel = document.getElementById('pinPanel');
+        const paymentPanel = document.getElementById('paymentPanel');
+        const pinInput = document.getElementById('pinInput');
+        const amountInput = document.getElementById('amountInput');
+        const paymentMessage = document.getElementById('paymentMessage');
+
+        let currentCameraId = 0;
+        let capturedImageData = null;
+        let currentUserId = null;
+        let pinVerified = false;
+
+        // Initialize camera
+        async function initCamera() {
+            try {
+                const constraints = {
+                    video: {
+                        deviceId: currentCameraId ? { exact: currentCameraId } : undefined,
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                };
+
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = stream;
+
+                statusIndicator.classList.remove('error');
+                cameraInfo.textContent = '✓ Caméra connectée et prête';
+
+                return true;
+            } catch (error) {
+                console.error('Erreur caméra:', error);
+                statusIndicator.classList.add('error');
+                cameraInfo.textContent = '❌ Impossible d\'accéder à la caméra. Vérifiez les permissions.';
+                showError('Caméra non disponible: ' + error.message);
+                return false;
+            }
+        }
+
+        // Capture image from video
+        function captureImage() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+
+            capturedImageData = canvas.toDataURL('image/jpeg');
+            capturedImage.src = capturedImageData;
+            capturedImage.style.display = 'block';
+            verifyBtn.style.display = 'block';
+
+            hideError();
+            resultCard.classList.add('hidden');
+            stats.style.display = 'none';
+            pinPanel.classList.remove('show');
+            paymentPanel.classList.remove('show');
+            paymentMessage.classList.remove('show');
+            pinInput.value = '';
+            amountInput.value = '';
+            currentUserId = null;
+            pinVerified = false;
+        }
+
+        // Verify face via API
+        async function verifyFace() {
+            if (!capturedImageData) {
+                showError('Aucune image capturée');
+                return;
+            }
+
+            loading.classList.add('show');
+            hideError();
+
+            const startTime = Date.now();
+
+            try {
+                const response = await fetch('/verify_face', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        image: capturedImageData
+                    })
+                });
+
+                const data = await response.json();
+                const endTime = Date.now();
+
+                loading.classList.remove('show');
+
+                if (data.success) {
+                    displaySuccess(data.data, endTime - startTime);
+                } else {
+                    displayError(data.message);
+                }
+            } catch (error) {
+                loading.classList.remove('show');
+                console.error('Erreur vérification:', error);
+                showError('Erreur de communication avec le serveur: ' + error.message);
+            }
+        }
+
+        function displaySuccess(userData, responseTime) {
+            resultCard.classList.remove('error', 'hidden');
+            resultCard.querySelector('h2').textContent = '✓ Utilisateur reconnu';
+            resultCard.querySelector('h2').style.color = '#10b981';
+            resultCard.querySelectorAll('.result-item').forEach(item => {
+                item.style.display = 'flex';
+            });
+
+            document.getElementById('resultName').textContent = userData.name || '-';
+            document.getElementById('resultUserId').textContent = userData.user_id || '-';
+            document.getElementById('resultBalance').textContent = userData.balance ? userData.balance + ' €' : '-';
+
+            // Convertir distance en pourcentage de confiance
+            const distance = userData.distance || 0;
+            const confidence = Math.max(0, 100 - (distance * 100));
+            document.getElementById('resultDistance').textContent = confidence.toFixed(1) + '%';
+
+            document.getElementById('responseTime').textContent = responseTime + 'ms';
+            document.getElementById('modelName').textContent = userData.model || 'FaceNet512';
+            stats.style.display = 'grid';
+
+            currentUserId = userData.user_id;
+            pinVerified = false;
+            pinInput.value = '';
+            amountInput.value = '';
+            pinPanel.classList.add('show');
+            paymentPanel.classList.remove('show');
+            paymentMessage.classList.remove('show');
+        }
+
+        function displayError(message) {
+            resultCard.classList.remove('hidden');
+            resultCard.classList.add('error');
+            resultCard.querySelector('h2').textContent = '❌ ' + message;
+            resultCard.querySelector('h2').style.color = '#ef4444';
+            resultCard.querySelectorAll('.result-item').forEach(item => {
+                item.style.display = 'none';
+            });
+            pinPanel.classList.remove('show');
+            paymentPanel.classList.remove('show');
+            paymentMessage.classList.remove('show');
+            currentUserId = null;
+            pinVerified = false;
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+        }
+
+        function hideError() {
+            errorMessage.classList.remove('show');
+        }
+
+        async function verifyPin() {
+            hideError();
+
+            if (!currentUserId) {
+                showError('Commencez par la vérification faciale');
+                return;
+            }
+
+            const pin = pinInput.value.trim();
+            if (!pin) {
+                showError('Veuillez saisir le code PIN');
+                return;
+            }
+
+            try {
+                const response = await fetch('/verify_pin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: currentUserId,
+                        pin: pin
+                    })
+                });
+
+                const data = await response.json();
+                if (!data.success) {
+                    showError(data.message || 'PIN invalide');
+                    return;
+                }
+
+                pinVerified = true;
+                paymentPanel.classList.add('show');
+                paymentMessage.textContent = 'PIN validé. Vous pouvez effectuer le paiement.';
+                paymentMessage.classList.add('show');
+            } catch (error) {
+                showError('Erreur de vérification PIN: ' + error.message);
+            }
+        }
+
+        async function pay() {
+            hideError();
+
+            if (!currentUserId) {
+                showError('Utilisateur non identifié');
+                return;
+            }
+
+            if (!pinVerified) {
+                showError('Veuillez valider le PIN avant de payer');
+                return;
+            }
+
+            const amount = parseFloat(amountInput.value);
+            if (!amount || amount <= 0) {
+                showError('Montant invalide');
+                return;
+            }
+
+            try {
+                const response = await fetch('/pay', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: currentUserId,
+                        amount: amount
+                    })
+                });
+
+                const data = await response.json();
+                if (!data.success) {
+                    const backendMessage = data.message || 'Paiement refusé';
+                    if (backendMessage.toLowerCase().includes('solde insuffisant')) {
+                        showError('Non: solde insuffisant');
+                    } else {
+                        showError(backendMessage);
+                    }
+                    if (data.data && typeof data.data.current_balance !== 'undefined') {
+                        document.getElementById('resultBalance').textContent =
+                            data.data.current_balance + ' €';
+                    }
+                    return;
+                }
+
+                document.getElementById('resultBalance').textContent =
+                    data.data.new_balance + ' €';
+                paymentMessage.textContent =
+                    'Paiement de ' + data.data.amount + ' € effectué. Nouveau solde: '
+                    + data.data.new_balance + ' €.';
+                paymentMessage.classList.add('show');
+                amountInput.value = '';
+            } catch (error) {
+                showError('Erreur paiement: ' + error.message);
+            }
+        }
+
+        async function switchCamera() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+                if (videoDevices.length > 1) {
+                    currentCameraId = (currentCameraId + 1) % videoDevices.length;
+                    video.srcObject.getTracks().forEach(track => track.stop());
+                    await initCamera();
+                } else {
+                    alert('Une seule caméra disponible');
+                }
+            } catch (error) {
+                showError('Erreur changement caméra: ' + error.message);
+            }
+        }
+
+        // Start
+        initCamera();
+    </script>
+</body>
+</html>

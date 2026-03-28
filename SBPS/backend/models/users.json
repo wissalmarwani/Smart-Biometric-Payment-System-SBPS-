@@ -1,0 +1,26 @@
+{
+  "1": {
+    "name": "Wissal",
+    "face_path": "models/faces/wissal.png",
+    "balance": 70.0,
+    "pin": "1234"
+  },
+  "2": {
+    "name": "Khoukhou",
+    "face_path": "models/faces/khoukhou.png",
+    "balance": 50,
+    "pin": "2345"
+  },
+  "3": {
+    "name": "Ranim",
+    "face_path": "models/faces/ranim.png",
+    "balance": 75,
+    "pin": "3456"
+  },
+  "4": {
+    "name": "Wassim",
+    "face_path": "models/faces/wassim.png",
+    "balance": 120,
+    "pin": "4567"
+  }
+}
