@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import argparse
 import json
 import os
 from decimal import Decimal, InvalidOperation
@@ -9,7 +10,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-USERS_JSON = os.path.join(BASE_DIR, "models", "users.json")
+DEFAULT_USERS_BACKUP = os.path.join(BASE_DIR, "models", "users.backup.json")
+LEGACY_USERS_JSON = os.path.join(BASE_DIR, "models", "users.json")
+
+
+def resolve_source_file(explicit_source=None):
+    if explicit_source:
+        return explicit_source
+    if os.path.exists(DEFAULT_USERS_BACKUP):
+        return DEFAULT_USERS_BACKUP
+    return LEGACY_USERS_JSON
 
 
 def normalize_balance(value):
@@ -19,15 +29,37 @@ def normalize_balance(value):
         raise ValueError(f"Invalid balance value: {value}") from exc
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description=(
+            "Import legacy users JSON backup into PostgreSQL users table."
+        )
+    )
+    parser.add_argument(
+        "--source-file",
+        default=None,
+        help=(
+            "Path to backup JSON file. "
+            "Defaults to backend/models/users.backup.json"
+        ),
+    )
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
     database_url = os.getenv("DATABASE_URL", "").strip()
     if not database_url:
         raise RuntimeError("DATABASE_URL is not set")
 
-    if not os.path.exists(USERS_JSON):
-        raise FileNotFoundError(f"users.json not found: {USERS_JSON}")
+    source_file = resolve_source_file(args.source_file)
 
-    with open(USERS_JSON, "r", encoding="utf-8") as f:
+    if not os.path.exists(source_file):
+        raise FileNotFoundError(
+            f"Source users backup not found: {source_file}"
+        )
+
+    with open(source_file, "r", encoding="utf-8") as f:
         users_data = json.load(f)
 
     conn = psycopg2.connect(database_url)
@@ -69,7 +101,10 @@ def main():
                 )
 
         conn.commit()
-        print(f"Migration completed: {len(users_data)} users migrated")
+        print(
+            "Migration completed: "
+            f"{len(users_data)} users migrated from {source_file}"
+        )
     finally:
         conn.close()
 

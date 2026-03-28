@@ -189,6 +189,26 @@ def list_users():
         }), 500
 
 
+@app.route("/transactions", methods=["GET"])
+def list_transactions():
+    try:
+        service = ensure_service_ready()
+        limit = request.args.get("limit", 20)
+        transactions = service.list_transactions(limit=limit)
+        return jsonify({
+            "success": True,
+            "data": transactions,
+            "count": len(transactions)
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "data": [],
+            "count": 0,
+            "message": str(e)
+        }), 500
+
+
 @app.route("/verify_face", methods=["POST"])
 def verify_face_endpoint():
     """Verify face identity from image data."""

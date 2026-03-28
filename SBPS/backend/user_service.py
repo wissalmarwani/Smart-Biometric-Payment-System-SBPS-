@@ -165,3 +165,37 @@ class UserService:
             "new_balance": float(new_balance),
             "current_balance": float(current_balance),
         }
+
+    def list_transactions(self, limit=20):
+        safe_limit = max(1, min(int(limit), 100))
+        with self._cursor() as (_, cursor):
+            cursor.execute(
+                """
+                SELECT
+                    transaction_id,
+                    user_id,
+                    amount,
+                    balance_before,
+                    balance_after,
+                    status,
+                    created_at
+                FROM transactions
+                ORDER BY transaction_id DESC
+                LIMIT %s
+                """,
+                (safe_limit,),
+            )
+            rows = cursor.fetchall()
+
+        return [
+            {
+                "transaction_id": int(row[0]),
+                "user_id": str(row[1]),
+                "amount": float(row[2]),
+                "balance_before": float(row[3]),
+                "balance_after": float(row[4]),
+                "status": row[5],
+                "created_at": row[6].isoformat() if row[6] else None,
+            }
+            for row in rows
+        ]
