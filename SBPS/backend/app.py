@@ -12,6 +12,8 @@ from dotenv import load_dotenv
 from db import DBConfigError
 from user_service import (
     InsufficientBalanceError,
+    InvalidPinError,
+    PinLockedError,
     UserNotFoundError,
     UserService,
     UserServiceError,
@@ -284,27 +286,45 @@ def verify_pin_endpoint():
             }), 400
 
         service = ensure_service_ready()
+        max_attempts = _get_int_env("MAX_PIN_ATTEMPTS", 5)
+        lock_seconds = _get_int_env("PIN_LOCK_SECONDS", 300)
 
         try:
-            is_valid, user = service.verify_pin_plaintext(user_id, pin)
+            user = service.verify_pin_secure(
+                user_id=user_id,
+                provided_pin=pin,
+                max_attempts=max_attempts,
+                lock_seconds=lock_seconds,
+            )
         except UserNotFoundError:
             return jsonify({
                 "success": False,
                 "message": "User not found"
             }), 404
-
-        stored_pin = str(user.get("pin", "")).strip() if user else ""
-        if not stored_pin:
+        except PinLockedError as exc:
             return jsonify({
                 "success": False,
-                "message": "PIN not configured for user"
-            }), 400
-
-        if not is_valid:
+                "message": "Too many failed attempts. Try again later.",
+                "retry_after_seconds": exc.retry_after_seconds,
+                "locked_until": (
+                    exc.locked_until.isoformat() if exc.locked_until else None
+                ),
+            }), 423
+        except InvalidPinError as exc:
+            remaining = exc.remaining_attempts
+            message = "Invalid PIN"
+            if remaining is not None:
+                message = f"Invalid PIN. Remaining attempts: {remaining}"
             return jsonify({
                 "success": False,
-                "message": "Invalid PIN"
+                "message": message,
+                "remaining_attempts": remaining,
             }), 401
+        except UserServiceError as exc:
+            return jsonify({
+                "success": False,
+                "message": str(exc)
+            }), 400
 
         mark_pin_verified(user_id)
 

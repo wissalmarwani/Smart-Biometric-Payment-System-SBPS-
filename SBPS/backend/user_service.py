@@ -1,5 +1,8 @@
 from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
+
+import bcrypt
 
 from db import create_connection_pool
 
@@ -18,6 +21,23 @@ class InsufficientBalanceError(UserServiceError):
     def __init__(self, current_balance):
         self.current_balance = float(current_balance)
         super().__init__("Insufficient balance")
+
+
+class InvalidPinError(UserServiceError):
+    """Raised when PIN verification fails."""
+
+    def __init__(self, remaining_attempts=None):
+        self.remaining_attempts = remaining_attempts
+        super().__init__("Invalid PIN")
+
+
+class PinLockedError(UserServiceError):
+    """Raised when user PIN entry is temporarily locked."""
+
+    def __init__(self, locked_until, retry_after_seconds):
+        self.locked_until = locked_until
+        self.retry_after_seconds = retry_after_seconds
+        super().__init__("PIN entry is temporarily locked")
 
 
 class UserService:
@@ -87,16 +107,140 @@ class UserService:
             "pin": str(row[4]) if row[4] is not None else "",
         }
 
-    def verify_pin_plaintext(self, user_id, provided_pin):
-        user = self.get_user(user_id)
-        if not user:
-            raise UserNotFoundError("User not found")
+    def verify_pin_secure(
+        self,
+        user_id,
+        provided_pin,
+        max_attempts=5,
+        lock_seconds=300,
+    ):
+        pin = str(provided_pin or "").strip()
+        if not pin:
+            raise InvalidPinError(remaining_attempts=max_attempts)
 
-        stored_pin = str(user.get("pin", "")).strip()
-        if not stored_pin:
-            return False, user
+        with self._cursor() as (conn, cursor):
+            cursor.execute(
+                """
+                SELECT
+                    user_id,
+                    name,
+                    face_path,
+                    balance,
+                    pin,
+                    pin_hash,
+                    COALESCE(failed_pin_attempts, 0),
+                    locked_until
+                FROM users
+                WHERE user_id = %s AND is_active = TRUE
+                FOR UPDATE
+                """,
+                (int(user_id),),
+            )
+            row = cursor.fetchone()
+            if not row:
+                conn.rollback()
+                raise UserNotFoundError("User not found")
 
-        return str(provided_pin).strip() == stored_pin, user
+            now = datetime.now(timezone.utc)
+            locked_until = self._normalize_datetime(row[7])
+            if locked_until and locked_until > now:
+                retry_after = int((locked_until - now).total_seconds())
+                conn.rollback()
+                raise PinLockedError(
+                    locked_until=locked_until,
+                    retry_after_seconds=max(retry_after, 1),
+                )
+
+            stored_pin = str(row[4] or "").strip()
+            stored_pin_hash = str(row[5] or "").strip()
+            failed_attempts = int(row[6] or 0)
+
+            if not stored_pin and not stored_pin_hash:
+                conn.rollback()
+                raise UserServiceError("PIN not configured for user")
+
+            is_valid = False
+            if stored_pin_hash:
+                try:
+                    is_valid = bcrypt.checkpw(
+                        pin.encode("utf-8"),
+                        stored_pin_hash.encode("utf-8"),
+                    )
+                except ValueError as exc:
+                    conn.rollback()
+                    raise UserServiceError(
+                        "Stored PIN hash is invalid"
+                    ) from exc
+            else:
+                is_valid = pin == stored_pin
+
+            if is_valid:
+                pin_hash = stored_pin_hash
+                if not pin_hash:
+                    pin_hash = bcrypt.hashpw(
+                        pin.encode("utf-8"),
+                        bcrypt.gensalt(),
+                    ).decode("utf-8")
+
+                cursor.execute(
+                    """
+                    UPDATE users
+                    SET
+                        pin_hash = %s,
+                        failed_pin_attempts = 0,
+                        locked_until = NULL
+                    WHERE user_id = %s
+                    """,
+                    (pin_hash, int(user_id)),
+                )
+                conn.commit()
+
+                return {
+                    "user_id": str(row[0]),
+                    "name": row[1],
+                    "face_path": row[2],
+                    "balance": float(row[3]),
+                }
+
+            failed_attempts += 1
+            remaining_attempts = max(int(max_attempts) - failed_attempts, 0)
+            if failed_attempts >= int(max_attempts):
+                lock_until = now + timedelta(seconds=int(lock_seconds))
+                lock_until_naive = lock_until.replace(tzinfo=None)
+                cursor.execute(
+                    """
+                    UPDATE users
+                    SET
+                        failed_pin_attempts = %s,
+                        locked_until = %s
+                    WHERE user_id = %s
+                    """,
+                    (failed_attempts, lock_until_naive, int(user_id)),
+                )
+                conn.commit()
+                raise PinLockedError(
+                    locked_until=lock_until,
+                    retry_after_seconds=max(int(lock_seconds), 1),
+                )
+
+            cursor.execute(
+                """
+                UPDATE users
+                SET failed_pin_attempts = %s
+                WHERE user_id = %s
+                """,
+                (failed_attempts, int(user_id)),
+            )
+            conn.commit()
+            raise InvalidPinError(remaining_attempts=remaining_attempts)
+
+    @staticmethod
+    def _normalize_datetime(value):
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
 
     def process_payment_atomic(self, user_id, amount):
         try:
