@@ -39,12 +39,6 @@ PIN_LOCK_SECONDS=300
 .venv\Scripts\python.exe backend/app.py
 ```
 
-3. Optional smoke test (new terminal):
-```powershell
-Set-Location backend
-.\smoke_test.ps1
-```
-
 ## Notes
 - Runtime now uses PostgreSQL only.
 - `backend/models/users.json` is legacy backup source for migration, not runtime storage.
