@@ -139,11 +139,25 @@ def verify_face_endpoint():
         )
         face_service = get_face_verification_service()
         user = face_service.verify_face(image_array, threshold)
+        liveness_result = getattr(
+            face_service,
+            "last_liveness_result",
+            None,
+        )
+
+        if liveness_result and not liveness_result.get("is_live", False):
+            return api_error(
+                403,
+                "Liveness check failed (possible spoof)",
+                data=None,
+                liveness=liveness_result,
+            )
 
         if user:
             return api_success(
                 data=user,
                 pin_required=True,
+                liveness=liveness_result,
                 message="User recognized",
             )
 

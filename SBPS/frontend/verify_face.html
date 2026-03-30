@@ -383,7 +383,7 @@
 
                 <div class="loading" id="loading">
                     <div class="spinner"></div>
-                    <p>Vérification en cours...</p>
+                    <p id="loadingText">Vérification en cours...</p>
                 </div>
 
                 <img id="capturedImage" alt="Image capturée">
@@ -465,6 +465,7 @@
         const resultCard = document.getElementById('resultCard');
         const errorMessage = document.getElementById('errorMessage');
         const loading = document.getElementById('loading');
+        const loadingText = document.getElementById('loadingText');
         const cameraInfo = document.getElementById('cameraInfo');
         const statusIndicator = document.getElementById('statusIndicator');
         const stats = document.getElementById('stats');
@@ -478,6 +479,7 @@
         let capturedImageData = null;
         let currentUserId = null;
         let pinVerified = false;
+        let hasVerifiedOnce = false;
 
         // Initialize camera
         async function initCamera() {
@@ -541,21 +543,35 @@
             loading.classList.add('show');
             hideError();
 
+            if (!hasVerifiedOnce) {
+                loadingText.textContent =
+                    'Premier lancement: chargement du modèle anti-spoofing, veuillez patienter...';
+            } else {
+                loadingText.textContent = 'Vérification en cours...';
+            }
+
             const startTime = Date.now();
 
             try {
+                const controller = new AbortController();
+                const timeoutMs = hasVerifiedOnce ? 30000 : 90000;
+                const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
                 const response = await fetch('/verify_face', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
+                    signal: controller.signal,
                     body: JSON.stringify({
                         image: capturedImageData
                     })
                 });
+                clearTimeout(timeoutId);
 
                 const data = await response.json();
                 const endTime = Date.now();
+                hasVerifiedOnce = true;
 
                 loading.classList.remove('show');
 
@@ -567,7 +583,11 @@
             } catch (error) {
                 loading.classList.remove('show');
                 console.error('Erreur vérification:', error);
-                showError('Erreur de communication avec le serveur: ' + error.message);
+                if (error.name === 'AbortError') {
+                    showError('Vérification trop longue (timeout). Réessayez.');
+                } else {
+                    showError('Erreur de communication avec le serveur: ' + error.message);
+                }
             }
         }
 

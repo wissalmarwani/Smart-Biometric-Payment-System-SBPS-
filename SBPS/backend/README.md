@@ -32,6 +32,14 @@ DB_POOL_MIN=1
 DB_POOL_MAX=20
 MAX_PIN_ATTEMPTS=5
 PIN_LOCK_SECONDS=300
+LIVENESS_ENABLED=true
+LIVENESS_STRATEGY=deepface
+LIVENESS_MIN_SCORE=0.75
+# Use these only for TensorFlow strategy:
+# LIVENESS_STRATEGY=tensorflow
+# LIVENESS_MODEL_PATH=backend/models/liveness/liveness_model.keras
+# LIVENESS_INPUT_SIZE=224
+# LIVENESS_LIVE_CLASS_INDEX=1
 ```
 
 2. Start backend:
@@ -42,3 +50,4 @@ PIN_LOCK_SECONDS=300
 ## Notes
 - Runtime now uses PostgreSQL only.
 - `backend/models/users.json` is legacy backup source for migration, not runtime storage.
+- For `LIVENESS_STRATEGY=deepface`, install PyTorch (`torch`) in the active virtual environment.

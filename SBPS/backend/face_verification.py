@@ -55,12 +55,47 @@ class FacePathResolver:
 class FaceVerificationService:
     """Facade over strategy and user source for face verification."""
 
-    def __init__(self, users_provider, path_resolver, strategy):
+    def __init__(
+        self,
+        users_provider,
+        path_resolver,
+        strategy,
+        liveness_service=None,
+    ):
         self._users_provider = users_provider
         self._path_resolver = path_resolver
         self._strategy = strategy
+        self._liveness_service = liveness_service
+        self._last_liveness_result = None
+
+    @property
+    def last_liveness_result(self):
+        return self._last_liveness_result
 
     def verify_face(self, image_array, distance_threshold=0.40):
+        if self._liveness_service is not None:
+            try:
+                self._last_liveness_result = self._liveness_service.check(
+                    image_array
+                )
+            except Exception as exc:
+                self._last_liveness_result = {
+                    "is_live": False,
+                    "score": None,
+                    "reason": f"liveness_error: {exc}",
+                    "source": "liveness_service",
+                }
+
+            if not self._last_liveness_result.get("is_live", False):
+                return None
+        else:
+            self._last_liveness_result = {
+                "is_live": True,
+                "score": None,
+                "reason": "not_configured",
+                "source": "none",
+            }
+
         users_data = self._users_provider()
         best_match = None
         best_distance = float("inf")

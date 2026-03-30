@@ -1,4 +1,9 @@
 from db import DBConfigError
+from anti_spoofing import (
+    DeepFaceAntiSpoofLivenessStrategy,
+    LivenessService,
+    TensorFlowLivenessStrategy,
+)
 from face_verification import (
     DeepFaceVerificationStrategy,
     FacePathResolver,
@@ -50,12 +55,36 @@ class ApplicationFactory:
             model_name="Facenet512",
             detector_backend="opencv",
         )
+        liveness_service = self._build_liveness_service()
         self._face_service = FaceVerificationService(
             users_provider=service.list_users,
             path_resolver=path_resolver,
             strategy=strategy,
+            liveness_service=liveness_service,
         )
         return self._face_service
 
     def get_pin_verification_store(self):
         return self._pin_store
+
+    def _build_liveness_service(self):
+        if not self.settings.liveness_enabled:
+            return LivenessService(enabled=False)
+
+        strategy_name = self.settings.liveness_strategy
+
+        if strategy_name == "tensorflow":
+            strategy = TensorFlowLivenessStrategy(
+                model_path=self.settings.liveness_model_path,
+                input_size=self.settings.liveness_input_size,
+                live_class_index=self.settings.liveness_live_class_index,
+                min_live_score=self.settings.liveness_min_score,
+                detector_backend="opencv",
+            )
+            return LivenessService(strategy=strategy, enabled=True)
+
+        strategy = DeepFaceAntiSpoofLivenessStrategy(
+            detector_backend="opencv",
+            min_live_score=self.settings.liveness_min_score,
+        )
+        return LivenessService(strategy=strategy, enabled=True)
