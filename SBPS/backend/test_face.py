@@ -1,5 +1,5 @@
 import cv2
-from face_recognition import get_face_embedding
+from ai.face_recognition import get_face_embedding
 
 
 def capture_warm_frame(camera_id=0, warmup_reads=10):

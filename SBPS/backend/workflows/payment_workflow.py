@@ -1,4 +1,4 @@
-from user_service import UserNotFoundError
+from services.user_service import UserNotFoundError
 
 
 class InvalidAmountError(RuntimeError):

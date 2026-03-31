@@ -1,5 +1,38 @@
 # SBPS Backend (PostgreSQL)
 
+## Project Structure
+```
+backend/
+	app.py                       # Flask entrypoint + static frontend serving
+	application_factory.py       # Dependency wiring (Factory pattern)
+	ai/                          # AI domain modules
+		face_recognition.py        # Embedding utilities
+		face_verification.py       # Face comparison strategy + service
+		anti_spoofing.py           # Liveness strategies + facade
+	services/
+		user_service.py            # Core user and transaction service
+	security/
+		pin_verification_store.py  # PIN verification TTL state
+	workflows/
+		payment_workflow.py        # PIN + payment orchestration (Facade)
+	api/
+		http.py                    # Shared API response and decode helpers
+		routes.py                  # Blueprint composition only
+		endpoints/
+			users.py                 # /health, /users, /transactions
+			verification.py          # /verify_face, /verify_pin
+			payments.py              # /pay
+```
+
+## Architecture Notes
+- HTTP handlers are split by feature under `api/endpoints`.
+- `api/routes.py` only assembles endpoint modules into one blueprint.
+- AI code is grouped under `ai/` for recognition and liveness concerns.
+- Business/persistence code is grouped under `services/`.
+- Security support stores are grouped under `security/`.
+- Business orchestration is in `workflows/payment_workflow.py`.
+- Data access and transactional logic stay in `services/user_service.py`.
+
 ## Init DB
 1. Create role and database:
 ```powershell

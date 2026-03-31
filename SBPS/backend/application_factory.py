@@ -1,17 +1,17 @@
 from db import DBConfigError
-from anti_spoofing import (
+from ai.anti_spoofing import (
     DeepFaceAntiSpoofLivenessStrategy,
     LivenessService,
     TensorFlowLivenessStrategy,
 )
-from face_verification import (
+from ai.face_verification import (
     DeepFaceVerificationStrategy,
     FacePathResolver,
     FaceVerificationService,
 )
-from pin_verification_store import PinVerificationStore
+from security.pin_verification_store import PinVerificationStore
 from settings import AppSettings
-from user_service import UserService
+from services.user_service import UserService
 from workflows.payment_workflow import PaymentWorkflowService
 
 

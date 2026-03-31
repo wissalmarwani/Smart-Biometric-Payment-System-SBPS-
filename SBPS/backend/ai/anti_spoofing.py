@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from importlib import import_module
+from typing import Any, Dict, Optional
 
 import cv2
 import numpy as np
@@ -10,9 +11,12 @@ class LivenessCheckError(RuntimeError):
     """Raised when liveness verification cannot be executed."""
 
 
+LivenessResult = Dict[str, Any]
+
+
 class LivenessStrategy(ABC):
     @abstractmethod
-    def check(self, image_array):
+    def check(self, image_array) -> LivenessResult:
         """Return dict with keys: is_live, score, reason."""
 
 
@@ -23,7 +27,7 @@ class DeepFaceAntiSpoofLivenessStrategy(LivenessStrategy):
         self.detector_backend = detector_backend
         self.min_live_score = float(min_live_score)
 
-    def check(self, image_array):
+    def check(self, image_array) -> LivenessResult:
         try:
             faces = DeepFace.extract_faces(
                 img_path=image_array,
@@ -37,12 +41,11 @@ class DeepFaceAntiSpoofLivenessStrategy(LivenessStrategy):
             ) from exc
 
         if not faces:
-            return {
-                "is_live": False,
-                "score": 0.0,
-                "reason": "no_face_detected",
-                "source": "deepface",
-            }
+            return self._result(
+                is_live=False,
+                score=0.0,
+                reason="no_face_detected",
+            )
 
         first_face = faces[0]
         is_real = first_face.get("is_real")
@@ -55,10 +58,18 @@ class DeepFaceAntiSpoofLivenessStrategy(LivenessStrategy):
             else:
                 is_real = float(score) >= self.min_live_score
 
+        return self._result(
+            is_live=bool(is_real),
+            score=float(score) if score is not None else None,
+            reason="ok" if is_real else "possible_spoof",
+        )
+
+    @staticmethod
+    def _result(is_live: bool, score: Optional[float], reason: str):
         return {
-            "is_live": bool(is_real),
-            "score": float(score) if score is not None else None,
-            "reason": "ok" if is_real else "possible_spoof",
+            "is_live": bool(is_live),
+            "score": score,
+            "reason": reason,
             "source": "deepface",
         }
 
@@ -138,7 +149,7 @@ class TensorFlowLivenessStrategy(LivenessStrategy):
 
         return resized
 
-    def check(self, image_array):
+    def check(self, image_array) -> LivenessResult:
         model = self._load_model()
 
         try:
@@ -149,12 +160,11 @@ class TensorFlowLivenessStrategy(LivenessStrategy):
             ) from exc
 
         if face_batch is None:
-            return {
-                "is_live": False,
-                "score": 0.0,
-                "reason": "no_face_detected",
-                "source": "tensorflow",
-            }
+            return self._result(
+                is_live=False,
+                score=0.0,
+                reason="no_face_detected",
+            )
 
         try:
             prediction = model.predict(face_batch, verbose=0)
@@ -183,10 +193,18 @@ class TensorFlowLivenessStrategy(LivenessStrategy):
             )
 
         is_live = live_score >= self.min_live_score
+        return self._result(
+            is_live=bool(is_live),
+            score=float(live_score),
+            reason="ok" if is_live else "possible_spoof",
+        )
+
+    @staticmethod
+    def _result(is_live: bool, score: Optional[float], reason: str):
         return {
             "is_live": bool(is_live),
-            "score": float(live_score),
-            "reason": "ok" if is_live else "possible_spoof",
+            "score": score,
+            "reason": reason,
             "source": "tensorflow",
         }
 
@@ -198,7 +216,7 @@ class LivenessService:
         self._strategy = strategy
         self._enabled = bool(enabled)
 
-    def check(self, image_array):
+    def check(self, image_array) -> LivenessResult:
         if not self._enabled or self._strategy is None:
             return {
                 "is_live": True,
