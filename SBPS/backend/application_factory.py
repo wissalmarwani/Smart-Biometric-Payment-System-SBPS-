@@ -12,6 +12,7 @@ from face_verification import (
 from pin_verification_store import PinVerificationStore
 from settings import AppSettings
 from user_service import UserService
+from workflows.payment_workflow import PaymentWorkflowService
 
 
 class ApplicationFactory:
@@ -23,6 +24,7 @@ class ApplicationFactory:
         self._user_service = None
         self._service_init_error = None
         self._face_service = None
+        self._payment_workflow_service = None
         self._pin_store = PinVerificationStore(
             ttl_seconds=self.settings.pin_ttl_seconds
         )
@@ -66,6 +68,18 @@ class ApplicationFactory:
 
     def get_pin_verification_store(self):
         return self._pin_store
+
+    def get_payment_workflow_service(self):
+        if self._payment_workflow_service is not None:
+            return self._payment_workflow_service
+
+        self._payment_workflow_service = PaymentWorkflowService(
+            user_service=self.get_user_service(),
+            pin_verification_store=self.get_pin_verification_store(),
+            max_pin_attempts=self.settings.max_pin_attempts,
+            pin_lock_seconds=self.settings.pin_lock_seconds,
+        )
+        return self._payment_workflow_service
 
     def _build_liveness_service(self):
         if not self.settings.liveness_enabled:
