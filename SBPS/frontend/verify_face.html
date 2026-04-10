@@ -3,8 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TPE Biométrique - Verification Faciale</title>
+    <title>TPE Biometrique - Verification Faciale</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Orbitron:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-top: #8fd3d7;
+            --bg-mid: #4f96a8;
+            --bg-bottom: #243a5a;
+            --glass: rgba(220, 245, 255, 0.17);
+            --glass-border: rgba(255, 255, 255, 0.35);
+            --text-main: #eafcff;
+            --text-muted: rgba(232, 250, 255, 0.72);
+            --ok: #66f2bb;
+            --danger: #ff9fa8;
+            --accent: #9df7ff;
+            --shadow: 0 28px 48px rgba(5, 22, 41, 0.35);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,69 +29,234 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Manrope', sans-serif;
             min-height: 100vh;
+            color: var(--text-main);
+            background:
+                radial-gradient(circle at 18% 18%, rgba(183, 255, 246, 0.45), transparent 40%),
+                radial-gradient(circle at 80% 22%, rgba(173, 214, 255, 0.42), transparent 45%),
+                radial-gradient(circle at 50% 88%, rgba(100, 149, 255, 0.27), transparent 42%),
+                linear-gradient(165deg, var(--bg-top) 0%, var(--bg-mid) 48%, var(--bg-bottom) 100%);
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 16px;
         }
 
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 1200px;
-            width: 100%;
-            padding: 40px;
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0.45;
+            background:
+                linear-gradient(to right, transparent 0%, rgba(240, 255, 255, 0.08) 50%, transparent 100%),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 58px,
+                    rgba(210, 250, 255, 0.05) 59px,
+                    rgba(210, 250, 255, 0.05) 60px
+                );
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
+        body::after {
+            content: '';
+            position: fixed;
+            inset: -20%;
+            pointer-events: none;
+            background:
+                radial-gradient(circle at 30% 30%, rgba(158, 255, 239, 0.16), transparent 36%),
+                radial-gradient(circle at 70% 60%, rgba(116, 173, 255, 0.2), transparent 42%);
+            filter: blur(26px);
+            animation: driftAura 10s ease-in-out infinite alternate;
         }
 
-        .header h1 {
-            color: #333;
-            font-size: 2.5em;
-            margin-bottom: 10px;
+        .scene {
+            width: min(1240px, 100%);
+            border-radius: 26px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: linear-gradient(180deg, rgba(16, 50, 72, 0.25) 0%, rgba(13, 34, 55, 0.34) 100%);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            padding: 18px;
+            position: relative;
+            overflow: hidden;
+            animation: fadeIn 0.7s ease-out;
         }
 
-        .header p {
-            color: #666;
-            font-size: 1.1em;
+        .scene::before {
+            content: '';
+            position: absolute;
+            inset: 1px;
+            border-radius: 25px;
+            border: 1px solid rgba(209, 244, 255, 0.12);
+            pointer-events: none;
         }
 
-        .content {
+        .scene::after {
+            content: '';
+            position: absolute;
+            left: -18%;
+            right: -18%;
+            bottom: -58%;
+            height: 65%;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at center, rgba(155, 243, 255, 0.24), transparent 62%);
+            filter: blur(12px);
+            pointer-events: none;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 10px 16px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .title-group h1 {
+            font-size: clamp(1.2rem, 1vw + 1rem, 1.85rem);
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-family: 'Orbitron', 'Manrope', sans-serif;
+            text-shadow: 0 6px 20px rgba(0, 22, 45, 0.35);
+        }
+
+        .title-group p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 2px;
+        }
+
+        .status-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 999px;
+            background: rgba(114, 235, 198, 0.17);
+            border: 1px solid rgba(141, 255, 216, 0.44);
+            padding: 7px 12px;
+            font-size: 0.82rem;
+            color: #ddfff1;
+        }
+
+        .meta-chip {
+            border-radius: 999px;
+            border: 1px solid rgba(188, 236, 255, 0.42);
+            background: rgba(209, 240, 255, 0.12);
+            padding: 7px 12px;
+            font-size: 0.82rem;
+            color: #e7f7ff;
+        }
+
+        .main-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 40px;
-            align-items: start;
+            grid-template-columns: 1fr 1.05fr 1fr;
+            gap: 14px;
+            position: relative;
+            z-index: 2;
         }
 
-        /* CAMERA SECTION */
-        .camera-section {
+        .glass-card {
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 14px 30px rgba(10, 27, 52, 0.25);
+            padding: 14px;
+            min-height: 520px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 12px;
+            position: relative;
+            isolation: isolate;
         }
 
-        .camera-label {
-            font-size: 1.2em;
-            font-weight: 600;
-            color: #333;
-            text-align: center;
+        .glass-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+            background: linear-gradient(130deg, rgba(255, 255, 255, 0.14), transparent 28%, transparent 70%, rgba(255, 255, 255, 0.08));
+            z-index: -1;
+        }
+
+        .panel-heading {
+            font-size: 0.92rem;
+            letter-spacing: 0.015em;
+            color: #ebffff;
+            opacity: 0.95;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--ok);
+            box-shadow: 0 0 10px rgba(114, 255, 198, 0.9);
+            animation: pulse 1.8s infinite;
+        }
+
+        .status-indicator.error {
+            background: var(--danger);
+            box-shadow: 0 0 10px rgba(255, 115, 142, 0.7);
+            animation: none;
         }
 
         #videoContainer {
             position: relative;
             width: 100%;
-            aspect-ratio: 4/3;
-            background: #000;
-            border-radius: 15px;
+            aspect-ratio: 4 / 5;
+            border-radius: 18px;
             overflow: hidden;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(203, 248, 255, 0.45);
+            background: rgba(12, 25, 36, 0.65);
+        }
+
+        #videoContainer::before,
+        #videoContainer::after {
+            content: '';
+            position: absolute;
+            width: 38px;
+            height: 38px;
+            border: 1px solid rgba(167, 245, 255, 0.6);
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        #videoContainer::before {
+            top: 8px;
+            left: 8px;
+            border-right: 0;
+            border-bottom: 0;
+            border-radius: 8px 0 0 0;
+        }
+
+        #videoContainer::after {
+            bottom: 8px;
+            right: 8px;
+            border-left: 0;
+            border-top: 0;
+            border-radius: 0 0 8px 0;
+        }
+
+        #videoContainer.scanning .scan-line {
+            opacity: 1;
         }
 
         #video {
@@ -84,133 +266,168 @@
             transform: scaleX(-1);
         }
 
-        #canvas {
-            display: none;
-        }
-
-        .status-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
+        .face-guide {
+            position: absolute;
+            inset: 8%;
+            border: 2px solid rgba(146, 247, 255, 0.56);
             border-radius: 50%;
-            background: #10b981;
-            margin-right: 8px;
-            animation: pulse 2s infinite;
+            box-shadow: 0 0 0 200vmax rgba(6, 19, 35, 0.28) inset;
+            pointer-events: none;
         }
 
-        .status-indicator.error {
-            background: #ef4444;
-            animation: none;
+        .face-guide::before,
+        .face-guide::after {
+            content: '';
+            position: absolute;
+            left: 12%;
+            right: 12%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(154, 255, 248, 0.9), transparent);
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        .face-guide::before {
+            top: 36%;
         }
 
-        .camera-info {
-            background: #f3f4f6;
-            padding: 12px 16px;
-            border-radius: 8px;
-            font-size: 0.9em;
-            color: #666;
-            text-align: center;
+        .face-guide::after {
+            bottom: 36%;
         }
 
-        /* BUTTONS */
+        .scan-line {
+            position: absolute;
+            left: 5%;
+            right: 5%;
+            top: 12%;
+            height: 2px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, transparent, rgba(141, 255, 245, 0.95), transparent);
+            box-shadow: 0 0 18px rgba(147, 255, 239, 0.95);
+            opacity: 0;
+            animation: scanMove 2.3s linear infinite;
+            pointer-events: none;
+        }
+
         .button-group {
-            display: flex;
-            gap: 12px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+            margin-top: auto;
         }
 
         button {
-            flex: 1;
-            padding: 14px 20px;
-            font-size: 1em;
-            font-weight: 600;
-            border: none;
-            border-radius: 10px;
+            border-radius: 13px;
+            border: 1px solid rgba(219, 194, 132, 0.72);
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+            font-family: inherit;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+
+        button:focus-visible,
+        input:focus-visible {
+            outline: 2px solid rgba(179, 255, 238, 0.8);
+            outline-offset: 2px;
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(90deg, #9f7430 0%, #d3b06c 48%, #e4d29e 100%);
+            color: #2f2414;
+            padding: 12px 14px;
+            box-shadow: inset 0 1px 0 rgba(255, 236, 177, 0.55), 0 8px 16px rgba(68, 50, 20, 0.22);
         }
 
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-1px);
         }
 
         .btn-secondary {
-            background: #e5e7eb;
-            color: #333;
+            background: linear-gradient(180deg, rgba(67, 114, 146, 0.62), rgba(47, 84, 112, 0.68));
+            color: #e9f7ff;
+            border-color: rgba(219, 194, 132, 0.72);
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            padding: 12px 14px;
+            font-size: 0.9rem;
+            box-shadow: inset 0 1px 0 rgba(226, 245, 255, 0.18), 0 8px 16px rgba(20, 44, 66, 0.28);
         }
 
-        .btn-secondary:hover {
-            background: #d1d5db;
+        .btn-icon {
+            width: 46px;
+            padding: 0;
+            font-size: 1.05rem;
         }
 
-        /* RESULT SECTION */
-        .result-section {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+        .identity-avatar {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            border: 2px solid rgba(188, 246, 255, 0.6);
+            margin: 0 auto;
+            overflow: hidden;
+            background: radial-gradient(circle at 30% 24%, rgba(169, 255, 239, 0.56), rgba(32, 70, 107, 0.62));
+            box-shadow: 0 0 0 8px rgba(205, 248, 255, 0.11);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .result-label {
-            font-size: 1.2em;
-            font-weight: 600;
-            color: #333;
+        .identity-avatar.has-capture {
+            transform: scale(1.03);
+            box-shadow: 0 0 0 8px rgba(205, 248, 255, 0.2), 0 0 24px rgba(124, 231, 255, 0.38);
         }
 
         #capturedImage {
             width: 100%;
-            border-radius: 15px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            height: 100%;
+            object-fit: cover;
             display: none;
         }
 
         .result-card {
-            background: #f0fdf4;
-            border: 2px solid #10b981;
-            border-radius: 12px;
-            padding: 20px;
+            border: 1px solid rgba(145, 255, 202, 0.35);
+            background: rgba(26, 79, 85, 0.34);
+            border-radius: 14px;
+            padding: 14px;
             display: block;
+            position: relative;
         }
 
-        .result-card.error {
-            background: #fef2f2;
-            border-color: #ef4444;
+        .result-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 14px;
+            background: linear-gradient(180deg, rgba(179, 255, 239, 0.08), transparent 30%, transparent 70%, rgba(177, 236, 255, 0.08));
+            pointer-events: none;
         }
 
         .result-card.hidden {
             display: none;
         }
 
-        .result-card h2 {
-            color: #10b981;
-            font-size: 1.5em;
-            margin-bottom: 15px;
+        .result-card.error {
+            border-color: rgba(255, 165, 165, 0.5);
+            background: rgba(102, 32, 44, 0.4);
         }
 
-        .result-card.error h2 {
-            color: #ef4444;
+        .result-card h2 {
+            font-size: 1.02rem;
+            margin-bottom: 10px;
+            color: #b4ffe8;
         }
 
         .result-item {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #d1e7dd;
+            gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(198, 245, 255, 0.18);
+            font-size: 0.9rem;
         }
 
         .result-item:last-child {
@@ -218,182 +435,418 @@
         }
 
         .result-label-text {
-            font-weight: 600;
-            color: #666;
+            color: var(--text-muted);
         }
 
         .result-value {
-            color: #333;
-            font-weight: 500;
+            color: #f4ffff;
+            font-weight: 700;
+        }
+
+        .confidence-meter {
+            margin-top: 8px;
+            width: 100%;
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(211, 245, 255, 0.14);
+            overflow: hidden;
+            border: 1px solid rgba(201, 239, 255, 0.22);
+        }
+
+        .confidence-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #7fe0ff 0%, #71ffbb 100%);
+            transition: width 0.35s ease;
+            box-shadow: 0 0 14px rgba(131, 255, 207, 0.55);
+        }
+
+        .flow-steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-top: 2px;
+        }
+
+        .step-chip {
+            border-radius: 999px;
+            border: 1px solid rgba(199, 244, 255, 0.3);
+            background: rgba(194, 242, 255, 0.08);
+            text-align: center;
+            font-size: 0.72rem;
+            padding: 6px 4px;
+            color: var(--text-muted);
+        }
+
+        .step-chip.active {
+            color: #ecfffb;
+            border-color: rgba(157, 255, 213, 0.55);
+            background: rgba(92, 206, 169, 0.24);
+            box-shadow: 0 6px 14px rgba(48, 151, 118, 0.24);
+        }
+
+        .action-panel {
+            display: none;
+            gap: 9px;
+            background: rgba(10, 35, 58, 0.28);
+            border: 1px solid rgba(203, 241, 255, 0.25);
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .action-panel.show {
+            display: grid;
+            animation: fadeIn 0.45s ease;
+        }
+
+        .action-panel label {
+            font-size: 0.84rem;
+            color: var(--text-muted);
+        }
+
+        .action-panel input {
+            width: 100%;
+            padding: 11px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(198, 242, 255, 0.32);
+            background: rgba(236, 252, 255, 0.13);
+            color: #ffffff;
+            font-size: 0.95rem;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .action-panel input::placeholder {
+            color: rgba(224, 245, 255, 0.58);
+        }
+
+        .quick-amounts {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 7px;
+        }
+
+        .amount-chip {
+            background: linear-gradient(180deg, rgba(67, 114, 146, 0.62), rgba(47, 84, 112, 0.68));
+            border: 1px solid rgba(219, 194, 132, 0.72);
+            color: #e9f7ff;
+            border-radius: 10px;
+            padding: 8px 0;
+            font-size: 0.83rem;
+            font-weight: 600;
+            transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+            box-shadow: inset 0 1px 0 rgba(226, 245, 255, 0.16), 0 8px 16px rgba(20, 44, 66, 0.24);
+        }
+
+        .amount-chip:hover {
+            transform: translateY(-1px);
+            background: linear-gradient(180deg, rgba(79, 130, 166, 0.72), rgba(55, 95, 126, 0.8));
+        }
+
+        .amount-chip.active {
+            border-color: rgba(219, 194, 132, 0.8);
+            background: linear-gradient(90deg, #9f7430 0%, #d3b06c 48%, #e4d29e 100%);
+            color: #2f2414;
+            box-shadow: inset 0 1px 0 rgba(255, 236, 177, 0.55), 0 8px 16px rgba(68, 50, 20, 0.22);
+        }
+
+        .stats {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .stat-box {
+            background: rgba(199, 240, 255, 0.12);
+            border: 1px solid rgba(211, 249, 255, 0.22);
+            border-radius: 10px;
+            padding: 8px;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .stat-value {
+            margin-top: 2px;
+            font-size: 0.96rem;
+            font-weight: 700;
+            color: #f5ffff;
+        }
+
+        .verify-action {
+            margin-top: 4px;
+        }
+
+        .error-message,
+        .info-message {
+            display: none;
+            border-radius: 12px;
+            padding: 10px;
+            font-size: 0.86rem;
+            line-height: 1.4;
         }
 
         .error-message {
-            background: #fef2f2;
-            color: #dc2626;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            display: none;
+            background: rgba(129, 32, 44, 0.45);
+            border: 1px solid rgba(255, 157, 170, 0.44);
+            color: #ffe6ea;
+            margin-bottom: 12px;
         }
 
-        .error-message.show {
+        .info-message {
+            background: rgba(40, 101, 86, 0.4);
+            border: 1px solid rgba(135, 255, 208, 0.42);
+            color: #e7fff3;
+        }
+
+        .info-message.success {
+            background: rgba(52, 132, 87, 0.44);
+            border-color: rgba(164, 255, 196, 0.56);
+        }
+
+        .error-message.show,
+        .info-message.show {
             display: block;
+            animation: fadeIn 0.35s ease;
+        }
+
+        .confirm-title {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #cdffe5;
+            margin-top: 4px;
+        }
+
+        .confirm-sub {
+            color: var(--text-muted);
+            font-size: 0.87rem;
+            margin-bottom: 6px;
+        }
+
+        .transaction-box {
+            border: 1px solid rgba(213, 246, 255, 0.28);
+            border-radius: 14px;
+            background: rgba(16, 50, 74, 0.4);
+            padding: 12px;
+            display: grid;
+            gap: 8px;
+        }
+
+        .tx-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            border-bottom: 1px solid rgba(210, 246, 255, 0.15);
+            padding-bottom: 7px;
+            font-size: 0.9rem;
+            transition: background 0.2s ease;
+        }
+
+        .tx-row:hover {
+            background: rgba(185, 236, 255, 0.08);
+            border-radius: 6px;
+        }
+
+        .tx-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .tx-label {
+            color: var(--text-muted);
+        }
+
+        .tx-value {
+            color: #f2ffff;
+            font-weight: 700;
+        }
+
+        .right-actions {
+            margin-top: auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
         }
 
         .loading {
             display: none;
             text-align: center;
-        }
-
-        .spinner {
-            border: 4px solid #f3f4f6;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(196, 240, 255, 0.25);
+            background: rgba(16, 47, 70, 0.42);
         }
 
         .loading.show {
             display: block;
         }
 
-        /* STATS */
-        .stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
+        .spinner {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 3px solid rgba(175, 232, 255, 0.35);
+            border-top-color: var(--accent);
+            margin: 0 auto 7px;
+            animation: spin 0.9s linear infinite;
         }
 
-        .stat-box {
-            background: #f9fafb;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .stat-label {
-            font-size: 0.85em;
-            color: #999;
-            font-weight: 600;
-        }
-
-        .stat-value {
-            font-size: 1.5em;
-            color: #333;
-            font-weight: 700;
-            margin-top: 5px;
-        }
-
-        .action-panel {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 16px;
-            display: none;
-            gap: 12px;
-        }
-
-        .action-panel.show {
-            display: grid;
-        }
-
-        .action-panel label {
-            font-weight: 600;
-            color: #374151;
-        }
-
-        .action-panel input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 1em;
-        }
-
-        .info-message {
-            font-size: 0.95em;
-            color: #1f2937;
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-            border-radius: 8px;
-            padding: 12px;
+        #canvas {
             display: none;
         }
 
-        .info-message.show {
-            display: block;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
-        /* RESPONSIVE */
-        @media (max-width: 1024px) {
-            .content {
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.92); }
+        }
+
+        @keyframes scanMove {
+            0% { transform: translateY(-8%); opacity: 0; }
+            12% { opacity: 1; }
+            88% { opacity: 1; }
+            100% { transform: translateY(340px); opacity: 0; }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes driftAura {
+            0% { transform: translate3d(0, 0, 0) scale(1); }
+            100% { transform: translate3d(1.5%, -2%, 0) scale(1.04); }
+        }
+
+        @media (max-width: 1100px) {
+            .main-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .glass-card {
+                min-height: 450px;
+            }
+
+            .glass-card:last-child {
+                grid-column: 1 / -1;
+                min-height: auto;
+            }
+        }
+
+        @media (max-width: 760px) {
+            body {
+                padding: 10px;
+            }
+
+            .scene {
+                border-radius: 20px;
+                padding: 12px;
+            }
+
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .topbar-right {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+
+            .main-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .glass-card {
+                min-height: auto;
+            }
+
+            .button-group,
+            .right-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .btn-secondary {
+                width: 100%;
+            }
+
+            .btn-icon {
+                width: 100%;
+                padding: 12px;
+            }
+
+            .quick-amounts {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation: none !important;
+                transition: none !important;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🔐 TPE Biométrique</h1>
-            <p>Vérification faciale pour paiement sécurisé</p>
-        </div>
+    <main class="scene">
+        <header class="topbar">
+            <div class="title-group">
+                <h1>TPE Biometrique Securise</h1>
+                <p>Reconnaissance faciale + PIN pour valider chaque transaction.</p>
+            </div>
+            <div class="topbar-right">
+                <div class="status-chip" id="cameraInfo">Camera connectee et prete</div>
+                <div class="meta-chip" id="liveClock">--:--:--</div>
+            </div>
+        </header>
 
-        <div class="content">
-            <!-- CAMERA SECTION -->
-            <div class="camera-section">
-                <div class="camera-label">
+        <div class="error-message" id="errorMessage"></div>
+
+        <section class="main-grid">
+            <article class="glass-card">
+                <div class="panel-heading">
                     <span class="status-indicator" id="statusIndicator"></span>
-                    Caméra en direct
+                    Scanner le visage
                 </div>
 
                 <div id="videoContainer">
                     <video id="video" playsinline autoplay></video>
+                    <div class="face-guide"></div>
+                    <div class="scan-line"></div>
                 </div>
-
-                <div class="camera-info" id="cameraInfo">
-                    ✓ Caméra connectée et prête
-                </div>
-
-                <div class="button-group">
-                    <button class="btn-primary" id="captureBtn" onclick="captureImage()">
-                        📸 Capturer
-                    </button>
-                    <button class="btn-secondary" id="switchCameraBtn" onclick="switchCamera()">
-                        🔄 Changer caméra
-                    </button>
-                </div>
-            </div>
-
-            <!-- RESULT SECTION -->
-            <div class="result-section">
-                <div class="result-label">Résultat</div>
-
-                <div class="error-message" id="errorMessage"></div>
 
                 <div class="loading" id="loading">
                     <div class="spinner"></div>
-                    <p id="loadingText">Vérification en cours...</p>
+                    <p id="loadingText">Verification en cours...</p>
                 </div>
 
-                <img id="capturedImage" alt="Image capturée">
+                <div class="button-group">
+                    <button class="btn-primary" id="captureBtn" type="button" onclick="captureImage()">Demarrer la reconnaissance</button>
+                    <button class="btn-secondary btn-icon" id="switchCameraBtn" type="button" onclick="switchCamera()" title="Changer camera">↻</button>
+                </div>
+            </article>
 
-                <button class="btn-primary" id="verifyBtn" onclick="verifyFace()" style="display: none;">
-                    ✓ Vérifier l'identité
-                </button>
+            <article class="glass-card">
+                <div class="identity-avatar" id="identityAvatar">
+                    <img id="capturedImage" alt="Image capturee">
+                </div>
 
                 <div class="result-card hidden" id="resultCard">
-                    <h2 id="resultTitle">Utilisateur reconnu ✓</h2>
+                    <h2 id="resultTitle">Reconnaissance reussie</h2>
                     <div class="result-item">
                         <span class="result-label-text">Nom:</span>
                         <span class="result-value" id="resultName">-</span>
@@ -403,63 +856,117 @@
                         <span class="result-value" id="resultUserId">-</span>
                     </div>
                     <div class="result-item">
-                        <span class="result-label-text">Solde:</span>
+                        <span class="result-label-text">Solde Actuel:</span>
                         <span class="result-value" id="resultBalance">-</span>
                     </div>
                     <div class="result-item">
                         <span class="result-label-text">Confiance:</span>
                         <span class="result-value" id="resultDistance">-</span>
                     </div>
+                    <div class="confidence-meter" aria-label="Niveau de confiance">
+                        <div class="confidence-fill" id="confidenceFill"></div>
+                    </div>
+                </div>
+
+                <button class="btn-primary verify-action" id="verifyBtn" type="button" onclick="verifyFace()" style="display: none;">
+                    Verifier l'identite
+                </button>
+
+                <div class="flow-steps">
+                    <span class="step-chip" id="stepFace">1. Visage</span>
+                    <span class="step-chip" id="stepPin">2. PIN</span>
+                    <span class="step-chip" id="stepPay">3. Paiement</span>
                 </div>
 
                 <div class="action-panel" id="pinPanel">
-                    <label for="pinInput">Code PIN</label>
+                    <label for="pinInput">Saisir votre Code PIN a 4 chiffres</label>
                     <input
                         type="password"
                         id="pinInput"
                         maxlength="6"
                         inputmode="numeric"
-                        placeholder="Saisir votre PIN"
+                        placeholder="...."
                     >
-                    <button class="btn-primary" onclick="verifyPin()">
-                        🔐 Vérifier PIN
-                    </button>
+                    <button class="btn-primary" id="pinVerifyBtn" type="button" onclick="verifyPin()">Verifier le Code PIN</button>
                 </div>
 
-                <div class="action-panel" id="paymentPanel">
-                    <label for="amountInput">Montant à payer (€)</label>
-                    <input
-                        type="number"
-                        id="amountInput"
-                        min="0.01"
-                        step="0.01"
-                        placeholder="Ex: 15.50"
-                    >
-                    <button class="btn-primary" onclick="pay()">💳 Payer</button>
-                </div>
-
-                <div class="info-message" id="paymentMessage"></div>
-
-                <div class="stats" id="stats" style="display: none;">
+                <div class="stats" id="stats">
                     <div class="stat-box">
                         <div class="stat-label">Temps</div>
                         <div class="stat-value" id="responseTime">0ms</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-label">Modèle</div>
+                        <div class="stat-label">Modele</div>
                         <div class="stat-value" id="modelName">FaceNet512</div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
+            </article>
+
+            <article class="glass-card">
+                <div class="panel-heading">Confirmation de la Transaction</div>
+                <div class="confirm-title" id="successTitle">Paiement en attente</div>
+                <div class="confirm-sub">Le paiement apparaitra ici apres verification.</div>
+
+                <div class="transaction-box">
+                    <div class="tx-row">
+                        <span class="tx-label">Utilisateur</span>
+                        <span class="tx-value" id="txUser">-</span>
+                    </div>
+                    <div class="tx-row">
+                        <span class="tx-label">ID Transaction</span>
+                        <span class="tx-value" id="txId">-</span>
+                    </div>
+                    <div class="tx-row">
+                        <span class="tx-label">Montant paye</span>
+                        <span class="tx-value" id="txAmount">-</span>
+                    </div>
+                    <div class="tx-row">
+                        <span class="tx-label">Nouveau Solde</span>
+                        <span class="tx-value" id="txNewBalance">-</span>
+                    </div>
+                    <div class="tx-row">
+                        <span class="tx-label">Heure</span>
+                        <span class="tx-value" id="txTime">-</span>
+                    </div>
+                    <div class="tx-row">
+                        <span class="tx-label">Mode de Paiement</span>
+                        <span class="tx-value">Portefeuille Application</span>
+                    </div>
+                </div>
+
+                <div class="action-panel" id="paymentPanel">
+                    <label for="amountInput">Montant a payer (dinar)</label>
+                    <input
+                        type="number"
+                        id="amountInput"
+                        min="0.01"
+                        step="0.01"
+                        placeholder="Ex: 20"
+                    >
+                    <div class="quick-amounts">
+                        <button class="amount-chip" type="button" onclick="setQuickAmount(10, this)">10 dinar</button>
+                        <button class="amount-chip" type="button" onclick="setQuickAmount(20, this)">20 dinar</button>
+                        <button class="amount-chip" type="button" onclick="setQuickAmount(50, this)">50 dinar</button>
+                        <button class="amount-chip" type="button" onclick="setQuickAmount(100, this)">100 dinar</button>
+                    </div>
+                    <button class="btn-primary" id="payBtn" type="button" onclick="pay()">Confirmer le paiement</button>
+                </div>
+
+                <div class="info-message" id="paymentMessage"></div>
+
+                <div class="right-actions">
+                    <button class="btn-secondary" type="button" onclick="sendReceipt()">Envoyer un recu</button>
+                    <button class="btn-primary" type="button" onclick="resetFlow()">Retour a l'accueil</button>
+                </div>
+            </article>
+        </section>
+    </main>
 
     <canvas id="canvas"></canvas>
 
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
-        const captureBtn = document.getElementById('captureBtn');
         const verifyBtn = document.getElementById('verifyBtn');
         const capturedImage = document.getElementById('capturedImage');
         const resultCard = document.getElementById('resultCard');
@@ -474,19 +981,79 @@
         const pinInput = document.getElementById('pinInput');
         const amountInput = document.getElementById('amountInput');
         const paymentMessage = document.getElementById('paymentMessage');
+        const videoContainer = document.getElementById('videoContainer');
+        const identityAvatar = document.getElementById('identityAvatar');
+        const liveClock = document.getElementById('liveClock');
+        const confidenceFill = document.getElementById('confidenceFill');
+        const pinVerifyBtn = document.getElementById('pinVerifyBtn');
+        const payBtn = document.getElementById('payBtn');
 
-        let currentCameraId = 0;
+        let currentCameraIndex = 0;
+        let currentCameraDeviceId = null;
         let capturedImageData = null;
         let currentUserId = null;
         let pinVerified = false;
         let hasVerifiedOnce = false;
 
-        // Initialize camera
+        function setFlowStep(step) {
+            const stepFace = document.getElementById('stepFace');
+            const stepPin = document.getElementById('stepPin');
+            const stepPay = document.getElementById('stepPay');
+
+            [stepFace, stepPin, stepPay].forEach((chip) => chip.classList.remove('active'));
+
+            if (step === 'face') {
+                stepFace.classList.add('active');
+                return;
+            }
+            if (step === 'pin') {
+                stepFace.classList.add('active');
+                stepPin.classList.add('active');
+                return;
+            }
+            stepFace.classList.add('active');
+            stepPin.classList.add('active');
+            stepPay.classList.add('active');
+        }
+
+        function updateClock() {
+            liveClock.textContent = new Date().toLocaleTimeString('fr-FR', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        function setButtonBusy(button, isBusy, busyText, normalText) {
+            if (!button) {
+                return;
+            }
+            button.disabled = isBusy;
+            button.textContent = isBusy ? busyText : normalText;
+        }
+
+        function setQuickAmount(value, sourceButton) {
+            amountInput.value = String(value);
+            amountInput.focus();
+
+            document.querySelectorAll('.amount-chip').forEach((chip) => {
+                chip.classList.remove('active');
+            });
+            if (sourceButton) {
+                sourceButton.classList.add('active');
+            }
+        }
+
+        async function getVideoDevices() {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            return devices.filter((device) => device.kind === 'videoinput');
+        }
+
         async function initCamera() {
             try {
                 const constraints = {
                     video: {
-                        deviceId: currentCameraId ? { exact: currentCameraId } : undefined,
+                        deviceId: currentCameraDeviceId ? { exact: currentCameraDeviceId } : undefined,
                         width: { ideal: 1280 },
                         height: { ideal: 720 }
                     }
@@ -494,22 +1061,59 @@
 
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
+                videoContainer.classList.add('scanning');
 
                 statusIndicator.classList.remove('error');
-                cameraInfo.textContent = '✓ Caméra connectée et prête';
-
+                cameraInfo.textContent = 'Camera connectee et prete';
                 return true;
             } catch (error) {
-                console.error('Erreur caméra:', error);
+                console.error('Erreur camera:', error);
                 statusIndicator.classList.add('error');
-                cameraInfo.textContent = '❌ Impossible d\'accéder à la caméra. Vérifiez les permissions.';
-                showError('Caméra non disponible: ' + error.message);
+                cameraInfo.textContent = 'Camera indisponible';
+                showError('Camera non disponible: ' + error.message);
                 return false;
             }
         }
 
-        // Capture image from video
+        function resetFlow() {
+            capturedImageData = null;
+            currentUserId = null;
+            pinVerified = false;
+
+            capturedImage.style.display = 'none';
+            capturedImage.src = '';
+            identityAvatar.classList.remove('has-capture');
+            verifyBtn.style.display = 'none';
+
+            resultCard.classList.add('hidden');
+            resultCard.classList.remove('error');
+            stats.style.display = 'none';
+            pinPanel.classList.remove('show');
+            paymentPanel.classList.remove('show');
+            paymentMessage.classList.remove('show', 'success');
+
+            pinInput.value = '';
+            amountInput.value = '';
+            document.querySelectorAll('.amount-chip').forEach((chip) => chip.classList.remove('active'));
+
+            document.getElementById('successTitle').textContent = 'Paiement en attente';
+            document.getElementById('txUser').textContent = '-';
+            document.getElementById('txId').textContent = '-';
+            document.getElementById('txAmount').textContent = '-';
+            document.getElementById('txNewBalance').textContent = '-';
+            document.getElementById('txTime').textContent = '-';
+            confidenceFill.style.width = '0%';
+
+            setFlowStep('face');
+            hideError();
+        }
+
         function captureImage() {
+            if (!video.videoWidth || !video.videoHeight) {
+                showError('Le flux camera n est pas encore pret.');
+                return;
+            }
+
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
 
@@ -519,6 +1123,7 @@
             capturedImageData = canvas.toDataURL('image/jpeg');
             capturedImage.src = capturedImageData;
             capturedImage.style.display = 'block';
+            identityAvatar.classList.add('has-capture');
             verifyBtn.style.display = 'block';
 
             hideError();
@@ -526,17 +1131,19 @@
             stats.style.display = 'none';
             pinPanel.classList.remove('show');
             paymentPanel.classList.remove('show');
-            paymentMessage.classList.remove('show');
+            paymentMessage.classList.remove('show', 'success');
+
             pinInput.value = '';
             amountInput.value = '';
+            document.querySelectorAll('.amount-chip').forEach((chip) => chip.classList.remove('active'));
             currentUserId = null;
             pinVerified = false;
+            setFlowStep('face');
         }
 
-        // Verify face via API
         async function verifyFace() {
             if (!capturedImageData) {
-                showError('Aucune image capturée');
+                showError('Aucune image capturee');
                 return;
             }
 
@@ -544,10 +1151,9 @@
             hideError();
 
             if (!hasVerifiedOnce) {
-                loadingText.textContent =
-                    'Premier lancement: chargement du modèle anti-spoofing, veuillez patienter...';
+                loadingText.textContent = 'Premier lancement: chargement du modele anti-spoofing...';
             } else {
-                loadingText.textContent = 'Vérification en cours...';
+                loadingText.textContent = 'Verification en cours...';
             }
 
             const startTime = Date.now();
@@ -582,9 +1188,9 @@
                 }
             } catch (error) {
                 loading.classList.remove('show');
-                console.error('Erreur vérification:', error);
+                console.error('Erreur verification:', error);
                 if (error.name === 'AbortError') {
-                    showError('Vérification trop longue (timeout). Réessayez.');
+                    showError('Verification trop longue (timeout). Reessayez.');
                 } else {
                     showError('Erreur de communication avec le serveur: ' + error.message);
                 }
@@ -593,20 +1199,21 @@
 
         function displaySuccess(userData, responseTime) {
             resultCard.classList.remove('error', 'hidden');
-            resultCard.querySelector('h2').textContent = '✓ Utilisateur reconnu';
-            resultCard.querySelector('h2').style.color = '#10b981';
-            resultCard.querySelectorAll('.result-item').forEach(item => {
+            resultCard.querySelector('h2').textContent = 'Reconnaissance reussie';
+            resultCard.querySelector('h2').style.color = '#9fffd7';
+            resultCard.querySelectorAll('.result-item').forEach((item) => {
                 item.style.display = 'flex';
             });
 
             document.getElementById('resultName').textContent = userData.name || '-';
             document.getElementById('resultUserId').textContent = userData.user_id || '-';
-            document.getElementById('resultBalance').textContent = userData.balance ? userData.balance + ' €' : '-';
+            document.getElementById('resultBalance').textContent =
+                typeof userData.balance !== 'undefined' ? userData.balance + ' dinar' : '-';
 
-            // Convertir distance en pourcentage de confiance
             const distance = userData.distance || 0;
             const confidence = Math.max(0, 100 - (distance * 100));
             document.getElementById('resultDistance').textContent = confidence.toFixed(1) + '%';
+            confidenceFill.style.width = confidence.toFixed(1) + '%';
 
             document.getElementById('responseTime').textContent = responseTime + 'ms';
             document.getElementById('modelName').textContent = userData.model || 'FaceNet512';
@@ -614,26 +1221,36 @@
 
             currentUserId = userData.user_id;
             pinVerified = false;
+            confidenceFill.style.width = '0%';
             pinInput.value = '';
             amountInput.value = '';
+
             pinPanel.classList.add('show');
             paymentPanel.classList.remove('show');
-            paymentMessage.classList.remove('show');
+            paymentMessage.classList.remove('show', 'success');
+
+            document.getElementById('txUser').textContent = userData.name || '-';
+            document.getElementById('successTitle').textContent = 'Identite confirmee';
+            setFlowStep('pin');
         }
 
         function displayError(message) {
             resultCard.classList.remove('hidden');
             resultCard.classList.add('error');
-            resultCard.querySelector('h2').textContent = '❌ ' + message;
-            resultCard.querySelector('h2').style.color = '#ef4444';
-            resultCard.querySelectorAll('.result-item').forEach(item => {
+            resultCard.querySelector('h2').textContent = 'Erreur de reconnaissance';
+            resultCard.querySelector('h2').style.color = '#ffb8c3';
+            resultCard.querySelectorAll('.result-item').forEach((item) => {
                 item.style.display = 'none';
             });
+
             pinPanel.classList.remove('show');
             paymentPanel.classList.remove('show');
-            paymentMessage.classList.remove('show');
+            paymentMessage.classList.remove('show', 'success');
             currentUserId = null;
             pinVerified = false;
+
+            showError(message || 'Verification echouee');
+            setFlowStep('face');
         }
 
         function showError(message) {
@@ -649,7 +1266,7 @@
             hideError();
 
             if (!currentUserId) {
-                showError('Commencez par la vérification faciale');
+                showError('Commencez par la verification faciale');
                 return;
             }
 
@@ -660,6 +1277,7 @@
             }
 
             try {
+                setButtonBusy(pinVerifyBtn, true, 'Verification...', 'Verifier le Code PIN');
                 const response = await fetch('/verify_pin', {
                     method: 'POST',
                     headers: {
@@ -679,10 +1297,15 @@
 
                 pinVerified = true;
                 paymentPanel.classList.add('show');
-                paymentMessage.textContent = 'PIN validé. Vous pouvez effectuer le paiement.';
+                paymentMessage.textContent = 'Code PIN valide. Entrez le montant et confirmez.';
+                paymentMessage.classList.remove('success');
                 paymentMessage.classList.add('show');
+                document.getElementById('successTitle').textContent = 'PIN verifie';
+                setFlowStep('pay');
             } catch (error) {
-                showError('Erreur de vérification PIN: ' + error.message);
+                showError('Erreur de verification PIN: ' + error.message);
+            } finally {
+                setButtonBusy(pinVerifyBtn, false, 'Verification...', 'Verifier le Code PIN');
             }
         }
 
@@ -690,7 +1313,7 @@
             hideError();
 
             if (!currentUserId) {
-                showError('Utilisateur non identifié');
+                showError('Utilisateur non identifie');
                 return;
             }
 
@@ -706,6 +1329,7 @@
             }
 
             try {
+                setButtonBusy(payBtn, true, 'Paiement...', 'Confirmer le paiement');
                 const response = await fetch('/pay', {
                     method: 'POST',
                     headers: {
@@ -719,49 +1343,93 @@
 
                 const data = await response.json();
                 if (!data.success) {
-                    const backendMessage = data.message || 'Paiement refusé';
+                    const backendMessage = data.message || 'Paiement refuse';
                     if (backendMessage.toLowerCase().includes('solde insuffisant')) {
                         showError('Non: solde insuffisant');
                     } else {
                         showError(backendMessage);
                     }
+
                     if (data.data && typeof data.data.current_balance !== 'undefined') {
-                        document.getElementById('resultBalance').textContent =
-                            data.data.current_balance + ' €';
+                        document.getElementById('resultBalance').textContent = data.data.current_balance + ' dinar';
                     }
                     return;
                 }
 
-                document.getElementById('resultBalance').textContent =
-                    data.data.new_balance + ' €';
+                document.getElementById('resultBalance').textContent = data.data.new_balance + ' dinar';
+                document.getElementById('txAmount').textContent = '-' + data.data.amount + ' dinar';
+                document.getElementById('txNewBalance').textContent = data.data.new_balance + ' dinar';
+                document.getElementById('txTime').textContent = new Date().toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                document.getElementById('txId').textContent =
+                    '#' + Math.random().toString(36).slice(2, 8).toUpperCase();
+                document.getElementById('successTitle').textContent = 'Paiement reussi';
+
                 paymentMessage.textContent =
-                    'Paiement de ' + data.data.amount + ' € effectué. Nouveau solde: '
-                    + data.data.new_balance + ' €.';
-                paymentMessage.classList.add('show');
+                    'Paiement de ' + data.data.amount + ' dinar effectue. Nouveau solde: ' + data.data.new_balance + ' dinar.';
+                paymentMessage.classList.add('show', 'success');
                 amountInput.value = '';
+                document.querySelectorAll('.amount-chip').forEach((chip) => chip.classList.remove('active'));
             } catch (error) {
                 showError('Erreur paiement: ' + error.message);
+            } finally {
+                setButtonBusy(payBtn, false, 'Paiement...', 'Confirmer le paiement');
             }
+        }
+
+        function sendReceipt() {
+            const txId = document.getElementById('txId').textContent;
+            if (!txId || txId === '-') {
+                showError('Aucune transaction a envoyer.');
+                return;
+            }
+
+            paymentMessage.textContent = 'Recu envoye pour la transaction ' + txId + '.';
+            paymentMessage.classList.add('show', 'success');
+            hideError();
         }
 
         async function switchCamera() {
             try {
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                const videoDevices = await getVideoDevices();
 
-                if (videoDevices.length > 1) {
-                    currentCameraId = (currentCameraId + 1) % videoDevices.length;
-                    video.srcObject.getTracks().forEach(track => track.stop());
-                    await initCamera();
-                } else {
-                    alert('Une seule caméra disponible');
+                if (videoDevices.length <= 1) {
+                    showError('Une seule camera disponible');
+                    return;
                 }
+
+                currentCameraIndex = (currentCameraIndex + 1) % videoDevices.length;
+                currentCameraDeviceId = videoDevices[currentCameraIndex].deviceId;
+
+                if (video.srcObject) {
+                    video.srcObject.getTracks().forEach((track) => track.stop());
+                }
+
+                await initCamera();
+                hideError();
             } catch (error) {
-                showError('Erreur changement caméra: ' + error.message);
+                showError('Erreur changement camera: ' + error.message);
             }
         }
 
-        // Start
+        pinInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                verifyPin();
+            }
+        });
+
+        amountInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                pay();
+            }
+        });
+
+        updateClock();
+        setInterval(updateClock, 1000);
+        resetFlow();
         initCamera();
     </script>
 </body>

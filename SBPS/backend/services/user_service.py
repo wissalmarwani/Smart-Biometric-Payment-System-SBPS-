@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
+import re
 
 import bcrypt
 
@@ -105,6 +106,158 @@ class UserService:
             "face_path": row[2],
             "balance": float(row[3]),
             "pin": str(row[4]) if row[4] is not None else "",
+        }
+
+    def create_user(
+        self,
+        name,
+        face_path,
+        pin,
+        balance=0,
+        user_id=None,
+    ):
+        clean_name = str(name or "").strip()
+        clean_face_path = str(face_path or "").strip()
+        clean_pin = str(pin or "").strip()
+
+        if not clean_name:
+            raise UserServiceError("name is required")
+        if len(clean_name) < 2:
+            raise UserServiceError("name must contain at least 2 characters")
+        if not clean_face_path:
+            raise UserServiceError("face_path is required")
+        if not clean_pin:
+            raise UserServiceError("pin is required")
+        if not re.fullmatch(r"\d{4,6}", clean_pin):
+            raise UserServiceError("pin must be 4 to 6 digits")
+
+        try:
+            balance_decimal = Decimal(str(balance)).quantize(Decimal("0.01"))
+        except (InvalidOperation, ValueError, TypeError) as exc:
+            raise UserServiceError("balance must be a valid number") from exc
+
+        if balance_decimal < 0:
+            raise UserServiceError("balance cannot be negative")
+        if balance_decimal > Decimal("1000000.00"):
+            raise UserServiceError("balance is too large")
+
+        with self._cursor() as (conn, cursor):
+            try:
+                resolved_user_id = user_id
+                if resolved_user_id is None:
+                    cursor.execute(
+                        "SELECT COALESCE(MAX(user_id), 0) + 1 FROM users"
+                    )
+                    next_row = cursor.fetchone()
+                    resolved_user_id = int(next_row[0]) if next_row else 1
+                else:
+                    resolved_user_id = int(resolved_user_id)
+
+                if resolved_user_id <= 0:
+                    raise UserServiceError(
+                        "user_id must be a positive integer"
+                    )
+
+                pin_hash = bcrypt.hashpw(
+                    clean_pin.encode("utf-8"),
+                    bcrypt.gensalt(),
+                ).decode("utf-8")
+
+                cursor.execute(
+                    """
+                    INSERT INTO users (
+                        user_id,
+                        name,
+                        face_path,
+                        balance,
+                        pin,
+                        pin_hash,
+                        is_active
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, TRUE)
+                    """,
+                    (
+                        resolved_user_id,
+                        clean_name,
+                        clean_face_path,
+                        balance_decimal,
+                        clean_pin,
+                        pin_hash,
+                    ),
+                )
+                conn.commit()
+            except Exception as exc:
+                conn.rollback()
+                raise UserServiceError(
+                    f"Unable to create user: {exc}"
+                ) from exc
+
+        created_user = self.get_user(resolved_user_id)
+        if not created_user:
+            raise UserServiceError("User created but cannot be loaded")
+
+        created_user.pop("pin", None)
+        return created_user
+
+    def delete_user(self, user_id):
+        with self._cursor() as (conn, cursor):
+            try:
+                cursor.execute(
+                    """
+                    UPDATE users
+                    SET is_active = FALSE
+                    WHERE user_id = %s AND is_active = TRUE
+                    """,
+                    (int(user_id),),
+                )
+
+                if cursor.rowcount == 0:
+                    conn.rollback()
+                    raise UserNotFoundError("User not found")
+
+                conn.commit()
+            except UserNotFoundError:
+                raise
+            except Exception as exc:
+                conn.rollback()
+                raise UserServiceError(
+                    f"Unable to delete user: {exc}"
+                ) from exc
+
+    def update_user_face_path(self, user_id, face_path):
+        clean_face_path = str(face_path or "").strip()
+        if not clean_face_path:
+            raise UserServiceError("face_path is required")
+
+        with self._cursor() as (conn, cursor):
+            try:
+                cursor.execute(
+                    """
+                    UPDATE users
+                    SET face_path = %s
+                    WHERE user_id = %s AND is_active = TRUE
+                    RETURNING user_id, name, face_path, balance
+                    """,
+                    (clean_face_path, int(user_id)),
+                )
+                row = cursor.fetchone()
+                if not row:
+                    conn.rollback()
+                    raise UserNotFoundError("User not found")
+                conn.commit()
+            except UserNotFoundError:
+                raise
+            except Exception as exc:
+                conn.rollback()
+                raise UserServiceError(
+                    f"Unable to update face path: {exc}"
+                ) from exc
+
+        return {
+            "user_id": str(row[0]),
+            "name": row[1],
+            "face_path": row[2],
+            "balance": float(row[3]),
         }
 
     def verify_pin_secure(

@@ -1,4 +1,3 @@
-"""Legacy face embedding helpers used by standalone scripts."""
 
 import json
 from typing import Optional

@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SBPS - Accueil</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Orbitron:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,157 +15,125 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Manrope', sans-serif;
             min-height: 100vh;
+            color: #eafcff;
+            background:
+                radial-gradient(circle at 18% 18%, rgba(183, 255, 246, 0.45), transparent 40%),
+                radial-gradient(circle at 80% 22%, rgba(173, 214, 255, 0.42), transparent 45%),
+                radial-gradient(circle at 50% 88%, rgba(100, 149, 255, 0.27), transparent 42%),
+                linear-gradient(165deg, #8fd3d7 0%, #4f96a8 48%, #243a5a 100%);
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 16px;
         }
 
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 500px;
+        .scene {
+            width: min(820px, 100%);
+            border-radius: 26px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: linear-gradient(180deg, rgba(16, 50, 72, 0.25) 0%, rgba(13, 34, 55, 0.34) 100%);
+            box-shadow: 0 28px 48px rgba(5, 22, 41, 0.35);
+            backdrop-filter: blur(10px);
             width: 100%;
-            padding: 50px 40px;
+            padding: 30px 24px;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scene::after {
+            content: '';
+            position: absolute;
+            left: -15%;
+            right: -15%;
+            bottom: -52%;
+            height: 60%;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at center, rgba(155, 243, 255, 0.24), transparent 62%);
+            filter: blur(12px);
+            pointer-events: none;
+        }
+
+        .badge {
+            display: inline-block;
+            border-radius: 999px;
+            border: 1px solid rgba(188, 236, 255, 0.42);
+            background: rgba(209, 240, 255, 0.12);
+            padding: 7px 12px;
+            font-size: 0.82rem;
+            color: #e7f7ff;
+            margin-bottom: 16px;
         }
 
         h1 {
-            color: #333;
-            font-size: 2.5em;
-            margin-bottom: 10px;
+            font-family: 'Orbitron', 'Manrope', sans-serif;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-size: clamp(1.4rem, 1vw + 1.2rem, 2.2rem);
+            margin-bottom: 8px;
+            text-shadow: 0 6px 20px rgba(0, 22, 45, 0.35);
         }
 
         .subtitle {
-            color: #666;
-            font-size: 1.1em;
-            margin-bottom: 40px;
-        }
-
-        .feature-list {
-            list-style: none;
-            margin: 30px 0;
-            text-align: left;
-        }
-
-        .feature-list li {
-            padding: 12px 0;
-            color: #555;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 1em;
-        }
-
-        .feature-list li:before {
-            content: "✓";
-            display: inline-block;
-            width: 24px;
-            height: 24px;
-            background: #10b981;
-            color: white;
-            border-radius: 50%;
-            text-align: center;
-            line-height: 24px;
-            font-weight: bold;
-            flex-shrink: 0;
+            color: rgba(232, 250, 255, 0.76);
+            font-size: 0.98rem;
+            margin-bottom: 28px;
         }
 
         .buttons {
-            margin-top: 40px;
             display: flex;
             flex-direction: column;
             gap: 12px;
+            width: min(420px, 100%);
+            margin: 0 auto;
         }
 
         a {
-            padding: 16px 24px;
-            font-size: 1.1em;
-            font-weight: 600;
-            border: none;
-            border-radius: 12px;
+            padding: 14px 18px;
+            font-size: 1rem;
+            font-weight: 500;
+            border-radius: 13px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
             text-decoration: none;
             display: block;
+            border: 1px solid rgba(219, 194, 132, 0.72);
+            letter-spacing: 0.01em;
         }
 
-        .btn-main {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        .btn-verify {
+            background: linear-gradient(90deg, #9f7430 0%, #d3b06c 48%, #e4d29e 100%);
+            color: #2f2414;
+            box-shadow: inset 0 1px 0 rgba(255, 236, 177, 0.55), 0 8px 16px rgba(68, 50, 20, 0.22);
         }
 
-        .btn-main:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        .btn-admin {
+            background: linear-gradient(180deg, rgba(67, 114, 146, 0.62), rgba(47, 84, 112, 0.68));
+            color: #e9f7ff;
+            box-shadow: inset 0 1px 0 rgba(226, 245, 255, 0.18), 0 8px 16px rgba(20, 44, 66, 0.28);
         }
 
-        .btn-secondary {
-            background: #e5e7eb;
-            color: #333;
-        }
-
-        .btn-secondary:hover {
-            background: #d1d5db;
-        }
-
-        .info-box {
-            background: #f0fdf4;
-            border-left: 4px solid #10b981;
-            padding: 15px;
-            margin-top: 30px;
-            border-radius: 8px;
-            text-align: left;
-            font-size: 0.95em;
-        }
-
-        .info-box strong {
-            color: #065f46;
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        .info-box p {
-            color: #16a34a;
-            margin: 5px 0;
-            font-family: 'Courier New', monospace;
+        a:hover {
+            transform: translateY(-1px);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🔐 SBPS</h1>
+    <main class="scene">
+        <span class="badge">Smart Biometric Payment System</span>
+        <h1>SBPS</h1>
         <p class="subtitle">Smart Biometric Payment System</p>
 
-        <ul class="feature-list">
-            <li>Vérification faciale en temps réel</li>
-            <li>Reconnaissance biométrique sécurisée</li>
-            <li>Intégration TPE complète</li>
-            <li>API REST robuste</li>
-        </ul>
-
         <div class="buttons">
-            <a href="verify_face.html" class="btn-main">
-                🎥 Accéder à la vérification
+              <a href="verify_face.html" class="btn-verify">
+                 Accéder à la vérification
             </a>
-            <a href="http://localhost:5000/health" class="btn-secondary" target="_blank">
-                ✓ Vérifier le serveur
+              <a href="admin.html" class="btn-admin">
+                 Ouvrir la console admin
             </a>
         </div>
-
-        <div class="info-box">
-            <strong>📡 Serveur API:</strong>
-            <p>http://localhost:5000</p>
-            <strong>Endpoints disponibles:</strong>
-            <p>• POST /verify_face</p>
-            <p>• GET /capture</p>
-            <p>• GET /health</p>
-            <p>• GET /users</p>
-        </div>
-    </div>
+    </main>
 </body>
 </html>
